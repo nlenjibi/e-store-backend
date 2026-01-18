@@ -1,16 +1,19 @@
+version: '3.8'
 
+# NOTE: This docker-compose is NOT used by Railway
+# Railway uses the Dockerfile directly
+# This is only for local testing that mimics Railway's setup
 
 services:
- 
-
   # ========================================
   # Django Web Application
+  # Uses Railway's PostgreSQL and Redis
   # ========================================
   web:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ecommerce_web
+    container_name: ecommerce_web_local
     restart: unless-stopped
     command: >
       sh -c "
@@ -33,25 +36,10 @@ services:
       - .env
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings.production
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-ecommerce_db}
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-EFBJeIGOqIVPlLWvsxYImkskAazYOcIs}@cache:6379/1
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-EFBJeIGOqIVPlLWvsxYImkskAazYOcIs}@cache:6379/0
     ports:
       - "${WEB_PORT:-8000}:8000"
-    depends_on:
-      db:
-        condition: service_healthy
-      cache:
-        condition: service_healthy
     networks:
-      - backend
       - frontend
-    healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/admin/login/', timeout=2)"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
   # ========================================
   # Celery Worker (Background Tasks)
@@ -60,7 +48,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ecommerce_celery_worker
+    container_name: ecommerce_celery_worker_local
     restart: unless-stopped
     command: celery -A config worker --loglevel=info --concurrency=4
     volumes:
@@ -69,13 +57,10 @@ services:
       - .env
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings.production
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-ecommerce_db}
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-EFBJeIGOqIVPlLWvsxYImkskAazYOcIs}@cache:6379/1
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-EFBJeIGOqIVPlLWvsxYImkskAazYOcIs}@cache:6379/0
     depends_on:
       - web
     networks:
-      - backend
+      - frontend
 
   # ========================================
   # Celery Beat (Scheduled Tasks)
@@ -84,7 +69,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ecommerce_celery_beat
+    container_name: ecommerce_celery_beat_local
     restart: unless-stopped
     command: celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     volumes:
@@ -93,51 +78,14 @@ services:
       - .env
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings.production
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-ecommerce_db}
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-EFBJeIGOqIVPlLWvsxYImkskAazYOcIs}@cache:6379/1
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-EFBJeIGOqIVPlLWvsxYImkskAazYOcIs}@cache:6379/0
     depends_on:
       - web
     networks:
-      - backend
-
-  # ========================================
-  # Nginx Reverse Proxy (Optional)
-  # Uncomment to enable Nginx for serving static files
-  # and as reverse proxy for Django
-  # ========================================
-  # nginx:
-  #   image: nginx:1.25-alpine
-  #   container_name: ecommerce_nginx
-  #   restart: unless-stopped
-  #   volumes:
-  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-  #     - ./nginx/conf.d:/etc/nginx/conf.d:ro
-  #     - ./staticfiles:/app/staticfiles:ro
-  #     - ./media:/app/media:ro
-  #     - ./nginx/ssl:/etc/nginx/ssl:ro
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   depends_on:
-  #     - web
-  #   networks:
-  #     - frontend
+      - frontend
 
 # ========================================
 # Networks
 # ========================================
 networks:
-  backend:
-    driver: bridge
   frontend:
     driver: bridge
-
-# ========================================
-# Persistent Volumes
-# ========================================
-volumes:
-  postgres_data:
-    driver: local
-  redis_data:
-    driver: local
