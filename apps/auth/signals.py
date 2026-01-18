@@ -1,0 +1,19 @@
+"""Signals for the accounts app."""
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.contrib.auth import get_user_model
+from .models import UserProfile
+
+
+User = get_user_model()
+
+
+@receiver(post_save, sender=User)
+def create_or_update_user_profile(sender, instance, created, **kwargs):
+    """Create or update user profile when user is created or updated."""
+    if created:
+        UserProfile.objects.create(user=instance)
+    try:
+        instance.profile.save()
+    except UserProfile.DoesNotExist:
+        UserProfile.objects.create(user=instance)

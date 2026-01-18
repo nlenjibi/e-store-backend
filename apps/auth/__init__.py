@@ -1,0 +1,1 @@
+"""Accounts app for the Smart E-Commerce platform."""
