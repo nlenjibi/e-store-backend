@@ -21,11 +21,10 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements files
-COPY requirements.txt /app/
-COPY requirements-production.txt /app/
+# Copy requirements file
+COPY requirements-production.txt /app/requirements.txt
 
-# Install Python dependencies (use production requirements for Railway)
+# Install Python dependencies
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
