@@ -1,55 +1,7 @@
-version: '3.9'
 
-# ========================================
-# Production Docker Compose Configuration
-# Modern E-Commerce Django Backend
-# ========================================
 
 services:
-  # ========================================
-  # PostgreSQL Database
-  # ========================================
-  db:
-    image: postgres:15-alpine
-    container_name: ecommerce_db
-    restart: unless-stopped
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./backups:/backups
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-ecommerce_db}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-      POSTGRES_HOST_AUTH_METHOD: ${POSTGRES_HOST_AUTH_METHOD:-scram-sha-256}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    networks:
-      - backend
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ecommerce_db}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # ========================================
-  # Redis Cache
-  # ========================================
-  cache:
-    image: redis:7-alpine
-    container_name: ecommerce_redis
-    restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-changeme}
-    volumes:
-      - redis_data:/data
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    networks:
-      - backend
-    healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+ 
 
   # ========================================
   # Django Web Application
@@ -82,8 +34,8 @@ services:
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings.production
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-ecommerce_db}
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-changeme}@cache:6379/1
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-changeme}@cache:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-EFBJeIGOqIVPlLWvsxYImkskAazYOcIs}@cache:6379/1
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-EFBJeIGOqIVPlLWvsxYImkskAazYOcIs}@cache:6379/0
     ports:
       - "${WEB_PORT:-8000}:8000"
     depends_on:
@@ -118,8 +70,8 @@ services:
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings.production
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-ecommerce_db}
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-changeme}@cache:6379/1
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-changeme}@cache:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-EFBJeIGOqIVPlLWvsxYImkskAazYOcIs}@cache:6379/1
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-EFBJeIGOqIVPlLWvsxYImkskAazYOcIs}@cache:6379/0
     depends_on:
       - db
       - cache
@@ -144,8 +96,8 @@ services:
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings.production
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-ecommerce_db}
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-changeme}@cache:6379/1
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-changeme}@cache:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-EFBJeIGOqIVPlLWvsxYImkskAazYOcIs}@cache:6379/1
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-EFBJeIGOqIVPlLWvsxYImkskAazYOcIs}@cache:6379/0
     depends_on:
       - db
       - cache
