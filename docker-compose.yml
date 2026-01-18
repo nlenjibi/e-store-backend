@@ -1,0 +1,91 @@
+version: '3.8'
+
+# NOTE: This docker-compose is NOT used by Railway
+# Railway uses the Dockerfile directly
+# This is only for local testing that mimics Railway's setup
+
+services:
+  # ========================================
+  # Django Web Application
+  # Uses Railway's PostgreSQL and Redis
+  # ========================================
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecommerce_web_local
+    restart: unless-stopped
+    command: >
+      sh -c "
+        python manage.py migrate --noinput &&
+        python manage.py collectstatic --noinput --clear &&
+        gunicorn config.wsgi:application 
+          --bind 0.0.0.0:8000 
+          --workers 4 
+          --threads 2 
+          --timeout 60 
+          --access-logfile - 
+          --error-logfile - 
+          --log-level info
+      "
+    volumes:
+      - ./staticfiles:/app/staticfiles
+      - ./media:/app/media
+      - ./logs:/app/logs
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+    networks:
+      - frontend
+
+  # ========================================
+  # Celery Worker (Background Tasks)
+  # ========================================
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecommerce_celery_worker_local
+    restart: unless-stopped
+    command: celery -A config worker --loglevel=info --concurrency=4
+    volumes:
+      - ./logs:/app/logs
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+    depends_on:
+      - web
+    networks:
+      - frontend
+
+  # ========================================
+  # Celery Beat (Scheduled Tasks)
+  # ========================================
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecommerce_celery_beat_local
+    restart: unless-stopped
+    command: celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - ./logs:/app/logs
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+    depends_on:
+      - web
+    networks:
+      - frontend
+
+# ========================================
+# Networks
+# ========================================
+networks:
+  frontend:
+    driver: bridge
