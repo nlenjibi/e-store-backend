@@ -112,7 +112,7 @@ MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': os.environ.get('REDIS_URL', 'redis://localhost:6379/1'),
+        'LOCATION': os.environ.get('REDIS_URL', 'redis://:${REDIS_PASSWORD:-EFBJeIGOqIVPlLWvsxYImkskAazYOcIs}@cache:6379/1'),
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         }
